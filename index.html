@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>2048 + FX (Sprites & Sound)</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <div class="wrap">
+        <header class="topbar">
+            <div class="title">
+                <h1>2048</h1>
+                <p class="tagline">Merges trigger pixel-life + sprite bursts + sound.</p>
+            </div>
+            <div class="scores">
+                <div class="score">
+                    <div class="label">SCORE</div>
+                    <div id="score">0</div>
+                </div>
+                <div class="score">
+                    <div class="label">BEST</div>
+                    <div id="best">0</div>
+                </div>
+                <button id="newGame" class="btn">New Game</button>
+            </div>
+        </header>
+
+        <div id="board" class="board">
+            <div class="grid">
+                <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+                <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+                <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+                <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+            </div>
+
+            <!-- Life FX under tiles -->
+            <canvas id="fx" class="fx-canvas" aria-hidden="true"></canvas>
+
+            <!-- Tiles -->
+            <div id="tiles" class="tiles"></div>
+
+            <!-- Sprite explosions above tiles -->
+            <div id="spriteLayer" class="sprite-layer" aria-hidden="true"></div>
+        </div>
+
+        <div class="help">
+            <p><strong>Controls:</strong> Arrow keys / WASD / HJKL, or swipe on mobile.</p>
+        </div>
+    </div>
+
+    <div id="gameOver" class="overlay hidden">
+        <div class="modal">
+            <h2 id="gameOverTitle">Game Over</h2>
+            <p id="gameOverText">No more moves available.</p>
+            <button id="tryAgain" class="btn">Try Again</button>
+        </div>
+    </div>
+
+    <!-- Modules -->
+    <script src="life.js" defer></script>
+    <script src="sprites.js" defer></script>
+    <script src="sounds.js" defer></script>
+    <script src="shake.js" defer></script> 
+    <!-- Game -->
+    <script src="script.js" defer></script>
+
+</body>
+</html>
