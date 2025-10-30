@@ -6,6 +6,12 @@
       'assets/sfx/sidechained-synth-89131.mp3',
       'assets/sfx/bass-synth-125-bpm-35986.mp3',
       'assets/sfx/green-diamond-synth-loop-65020.mp3',
+      'assets/sfx/065128_filter-sweep-synth-40311.mp3',
+      'assets/sfx/level-up-04-243762.mp3',
+      'assets/sfx/fm-radio-static-82334.mp3',
+      'assets/sfx/edm-static-240838.mp3',
+      'assets/sfx/radio-static-323621.mp3',
+      'assets/sfx/dnbbt-87196.mp3'
 
     
   ];

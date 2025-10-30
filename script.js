@@ -1,4 +1,4 @@
-﻿/* ===== 2048 GAME (modules: life, sprites, sounds, shake) + Idle Auto-Move ===== */
+﻿/* ===== 2048 GAME (modules: life, lifeBG, sprites, sounds, shake) + Idle Auto-Move + Mascot ===== */
 const SIZE = 4;
 const SPAWN_VALUES = [2, 2, 2, 2, 4];
 
@@ -42,8 +42,14 @@ function onIdleTimeout() {
     const gameEnded = !overlay.classList.contains('hidden');
     if (moving || gameEnded || !canMove()) { resetIdleTimer(); return; }
 
+    // warn mascot a moment before the move
+    if (window.mascot) mascot.onIdleWarning();
+
     rapidShake(420);     // visual cue
     autoMove();          // perform one auto move
+
+    if (window.mascot) mascot.onAutoMove();
+
     // autoMove() will render and then we immediately re-arm the timer
     resetIdleTimer();
 }
@@ -68,12 +74,12 @@ function init() {
     render(true);
     hideOverlay();
 
-    if (window.life) life.init();
-    if (window.shake) shake.init(boardEl);
-    if (window.lifeBG) lifeBG.init();
+    if (window.life) life.init();            // in-board pixel Life
+    if (window.shake) shake.init(boardEl);   // shake engine
+    if (window.lifeBG) lifeBG.init();        // full-page background Life
+    if (window.mascot) mascot.onStart();     // start mascot near board
 
     updateShake();
-
     resetIdleTimer(); // start idle watcher
 }
 
@@ -155,18 +161,18 @@ function autoMove() {
     const dirs = ["left", "up", "right", "down"]; // decent heuristic order
     const beforeEmpties = grid.filter(v => v === 0).length;
 
-    let best = null;
+    let bestPick = null;
     for (const d of dirs) {
         const sim = simulateMove(d, grid);
         if (!sim.moved) continue;
         // Score: empties * 1000 + gained; prefer moves that increase empties
         const emptyGain = sim.empties - beforeEmpties;
         const score = emptyGain * 1000 + sim.gained;
-        if (!best || score > best.score) best = { dir: d, score, sim };
+        if (!bestPick || score > bestPick.score) bestPick = { dir: d, score, sim };
     }
 
     // If nothing moves (shouldn't happen if canMove() is true), bail
-    const chosen = best ? best.dir : dirs.find(d => simulateMove(d, grid).moved);
+    const chosen = bestPick ? bestPick.dir : dirs.find(d => simulateMove(d, grid).moved);
     if (chosen) move(chosen);
 }
 
@@ -219,11 +225,15 @@ function move(dir) {
         for (const at of mergedPositions) {
             mergingMap.set(at, { type: "merged" });
             const [r, c] = rcFromIdx(at);
+
             if (window.life) life.burstAtCell(r, c);
             const val = grid[at] || 4;
-            if (window.lifeBG) lifeBG.burstAroundElement(boardEl);
+
             if (window.sprites) sprites.burstAtCell(r, c, val);
             if (window.sounds) sounds.playMerge(val);
+            if (window.lifeBG) lifeBG.burstAroundElement(boardEl);
+            if (window.mascot) mascot.onMerge(val);
+
             if (window.shake) {
                 const s = Math.min(1, Math.log2(val) / 11);
                 shake.pulse(0.35 + s * 0.45, 140 + s * 120);
@@ -289,6 +299,7 @@ window.addEventListener("keydown", (e) => {
     e.preventDefault();
     moving = true;
     move(dir);
+    if (window.mascot) mascot.onMove(dir);
     setTimeout(() => (moving = false), 120);
 
     // User activity => reset timer right away
@@ -313,6 +324,7 @@ boardEl.addEventListener("touchend", (e) => {
     if (!moving) {
         moving = true;
         move(dir);
+        if (window.mascot) mascot.onMove(dir);
         setTimeout(() => (moving = false), 120);
     }
     touchStart = null;
@@ -322,7 +334,13 @@ boardEl.addEventListener("touchend", (e) => {
 newGameBtn.addEventListener("click", () => { init(); resetIdleTimer(); });
 tryAgainBtn.addEventListener("click", () => { init(); resetIdleTimer(); });
 
-function showOverlay(t, txt) { gameOverTitle.textContent = t; gameOverText.textContent = txt; overlay.classList.remove('hidden'); }
+function showOverlay(t, txt) {
+    gameOverTitle.textContent = t;
+    gameOverText.textContent = txt;
+    overlay.classList.remove('hidden');
+    if (window.mascot) mascot.onGameOver(t === "You win!"); // notify mascot here
+}
+
 function hideOverlay() { overlay.classList.add('hidden'); }
 
 window.addEventListener("load", () => {

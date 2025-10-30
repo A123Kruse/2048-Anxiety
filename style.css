@@ -313,3 +313,50 @@ body {
 /* Make sure the main content is above */
 .wrap, .board, header, .overlay { position: relative; z-index: 1; }
 
+/* Mascot */
+#mascot {
+    position: fixed;
+    left: 16px;
+    top: 16px; /* overwritten on start to sit by the board */
+    z-index: 3;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    pointer-events: none;
+    filter: drop-shadow(0 6px 16px rgba(0,0,0,.15));
+}
+
+    #mascot img {
+        width: 68px;
+        height: 68px;
+        image-rendering: auto; /* keep your GIF smooth */
+        border-radius: 12px;
+    }
+
+#mascot-bubble {
+    background: #fff;
+    color: #6b6460;
+    border-radius: 12px;
+    padding: 8px 10px;
+    font-weight: 700;
+    font-size: 13px;
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity .18s ease, transform .18s ease;
+    box-shadow: 0 6px 16px rgba(0,0,0,.12);
+}
+
+    #mascot-bubble.show {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+/* Talking tilt */
+#mascot img {
+    transition: transform .18s ease; /* smooth tilt in/out */
+    transform: rotate(0deg);
+}
+
+#mascot.talking img {
+    transform: rotate(var(--talk-rot, 12deg)); /* 10–15deg set by JS */
+}
