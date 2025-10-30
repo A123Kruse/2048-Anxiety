@@ -70,6 +70,8 @@ function init() {
 
     if (window.life) life.init();
     if (window.shake) shake.init(boardEl);
+    if (window.lifeBG) lifeBG.init();
+
     updateShake();
 
     resetIdleTimer(); // start idle watcher
@@ -219,6 +221,7 @@ function move(dir) {
             const [r, c] = rcFromIdx(at);
             if (window.life) life.burstAtCell(r, c);
             const val = grid[at] || 4;
+            if (window.lifeBG) lifeBG.burstAroundElement(boardEl);
             if (window.sprites) sprites.burstAtCell(r, c, val);
             if (window.sounds) sounds.playMerge(val);
             if (window.shake) {

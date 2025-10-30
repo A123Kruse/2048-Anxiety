@@ -299,3 +299,17 @@ body {
 .board {
     will-change: transform;
 }
+
+/* Full-screen Conway background */
+.life-bg{
+  position: fixed;
+  inset: 0;
+  z-index: 0;             /* under the board, which sits above via its own stacking */
+  pointer-events: none;   /* ignore clicks */
+  opacity: 0.75;          /* overall subtlety */
+  filter: contrast(115%) saturate(108%);
+}
+
+/* Make sure the main content is above */
+.wrap, .board, header, .overlay { position: relative; z-index: 1; }
+
