@@ -1,4 +1,6 @@
-﻿/* ===== 2048 GAME (modules: life, lifeBG, sprites, sounds, shake) + Idle Auto-Move + Mascot ===== */
+﻿/* ===== 2048 GAME (FX: life, lifeBG, sprites, sounds, shake, mascot) ===== */
+/* ===== Idle Punish Auto-Move (timeout + watchdog) + Theme Palettes ===== */
+
 const SIZE = 4;
 const SPAWN_VALUES = [2, 2, 2, 2, 4];
 
@@ -15,59 +17,71 @@ const boardEl = document.getElementById("board");
 let grid, score, best, mergingMap;
 let moving = false;
 
-/* --- Idle auto-move config --- */
-const IDLE_MS = 3000;            // 3 seconds of inactivity
-let idleTimerId = null;
-
-const idx = (r, c) => r * SIZE + c;
-const rcFromIdx = (i) => [Math.floor(i / SIZE), i % SIZE];
-
-function getBest() { const b = localStorage.getItem("best2048"); return b ? parseInt(b, 10) : 0; }
-function setBest(v) { localStorage.setItem("best2048", String(v)); }
-
-/* Palette shifting */
-const THEME_COUNT = 5; // 0..4 (matches themes.css)
+/* ---------- Theme palette shifting ---------- */
+const THEME_COUNT = 5;
 function applyThemeForScore(score) {
-    const themeIndex = Math.floor(score / 2500) % THEME_COUNT; // 2500-pt steps
-    // Theme 0 is your base; themes.css overrides 1..4
-    document.documentElement.setAttribute('data-theme', String(themeIndex));
+    const themeIndex = Math.floor(score / 2500) % THEME_COUNT;
+    document.documentElement.setAttribute("data-theme", String(themeIndex));
 }
 
-/* --- Shake intensity sync to board fill --- */
-function updateShake() {
-    if (!window.shake) return;
-    const filled = (SIZE * SIZE - emptyCells().length) / (SIZE * SIZE); // 0..1
-    shake.setFill(filled);
-}
+/* ---------- Idle punish system (timeout + watchdog) ---------- */
+const IDLE_MS = 3000;
+let idleTimerId = null;
+let lastActivityTs = 0;
+let watchdogId = null;
 
-/* --- Idle timer helpers --- */
+function nowTs() { return (performance && performance.now) ? performance.now() : Date.now(); }
+function markActivity() { lastActivityTs = nowTs(); }
+
 function resetIdleTimer() {
+    markActivity();
     if (idleTimerId) clearTimeout(idleTimerId);
     idleTimerId = setTimeout(onIdleTimeout, IDLE_MS);
 }
+
 function onIdleTimeout() {
-    // If game ended or currently animating a move, skip
-    const gameEnded = !overlay.classList.contains('hidden');
+    const gameEnded = !overlay.classList.contains("hidden");
     if (moving || gameEnded || !canMove()) { resetIdleTimer(); return; }
-
-    // warn mascot a moment before the move
+    // punish!
     if (window.mascot) mascot.onIdleWarning();
-
-    rapidShake(420);     // visual cue
-
-    // --- PATCH: mark moving during auto-move to avoid clashes ---
-    moving = true;
-    autoMove();          // perform one auto move
+    rapidShake(420);
+    punishAutoMove();
     if (window.mascot) mascot.onAutoMove();
-    setTimeout(() => (moving = false), 120);
-    // ------------------------------------------------------------
-
-    // autoMove() will render and then we immediately re-arm the timer
     resetIdleTimer();
+}
+
+// Watchdog: fires every 250ms and triggers punishment if, for any reason,
+// the one-shot timeout didn’t. This makes idle auto-move bulletproof.
+function startIdleWatchdog() {
+    if (watchdogId) clearInterval(watchdogId);
+    watchdogId = setInterval(() => {
+        const gameEnded = !overlay.classList.contains("hidden");
+        if (gameEnded || moving || !canMove()) return;
+        if (nowTs() - lastActivityTs < IDLE_MS) return;
+        // double-check to avoid fighting with timeout
+        try {
+            if (window.mascot) mascot.onIdleWarning();
+            rapidShake(420);
+            punishAutoMove();
+            if (window.mascot) mascot.onAutoMove();
+        } finally {
+            resetIdleTimer(); // re-arm both mechanisms
+        }
+    }, 250);
+}
+
+// treat any user interaction as activity
+["keydown", "mousedown", "mouseup", "mousemove", "wheel", "touchstart", "touchmove", "pointerdown", "pointermove"]
+    .forEach(evt => window.addEventListener(evt, markActivity, { passive: true }));
+
+/* ---------- Shake helpers ---------- */
+function updateShake() {
+    if (!window.shake) return;
+    const filled = (SIZE * SIZE - emptyCells().length) / (SIZE * SIZE);
+    shake.setFill(filled);
 }
 function rapidShake(ms = 400) {
     if (!window.shake) return;
-    // Big pulse + a few smaller ripples for a "rapid" feel
     shake.pulse(0.95, ms);
     let i = 0;
     const n = 3, iv = setInterval(() => {
@@ -76,25 +90,31 @@ function rapidShake(ms = 400) {
     }, 90);
 }
 
-/* --- Init --- */
+/* ---------- Init ---------- */
 function init() {
     grid = new Array(SIZE * SIZE).fill(0);
     score = 0;
     mergingMap = new Map();
+
     updateScore(0);
     spawnRandom(); spawnRandom();
     render(true);
     hideOverlay();
     applyThemeForScore(0);
 
-    if (window.life) life.init();            // in-board pixel Life
-    if (window.shake) shake.init(boardEl);   // shake engine
-    if (window.lifeBG) lifeBG.init();        // full-page background Life
-    if (window.mascot) mascot.onStart();     // start mascot near board
+    if (window.life) life.init();
+    if (window.shake) shake.init(boardEl);
+    if (window.lifeBG) lifeBG.init();
+    if (window.mascot) mascot.onStart();
 
     updateShake();
-    resetIdleTimer(); // start idle watcher
+    resetIdleTimer();
+    startIdleWatchdog();
 }
+
+/* ---------- Score & storage ---------- */
+function getBest() { const b = localStorage.getItem("best2048"); return b ? parseInt(b, 10) : 0; }
+function setBest(v) { localStorage.setItem("best2048", String(v)); }
 
 function updateScore(delta) {
     score += delta;
@@ -104,6 +124,10 @@ function updateScore(delta) {
     applyThemeForScore(score);
     if (best > getBest()) setBest(best);
 }
+
+/* ---------- Grid helpers ---------- */
+const idx = (r, c) => r * SIZE + c;
+const rcFromIdx = (i) => [Math.floor(i / SIZE), i % SIZE];
 
 function emptyCells() {
     const out = [];
@@ -118,11 +142,10 @@ function spawnRandom() {
     return true;
 }
 
-/* --- Pure simulator used by auto-move (no DOM/score side effects) --- */
+/* ---------- Simulator used by heuristics ---------- */
 function simulateMove(dir, srcGrid) {
     const g = srcGrid.slice();
     const lines = [];
-    const mergedPositions = [];
     let moved = false;
     let gained = 0;
 
@@ -150,7 +173,6 @@ function simulateMove(dir, srcGrid) {
                 const v = comp[read] * 2;
                 out[write] = v;
                 gained += v;
-                mergedPositions.push(line[write]);
                 read++;
             } else {
                 out[write] = comp[read];
@@ -165,36 +187,64 @@ function simulateMove(dir, srcGrid) {
     }
 
     const empties = g.filter(v => v === 0).length;
-    return { moved, gained, newGrid: g, empties, mergedPositions };
+    return { moved, gained, newGrid: g, empties };
 }
 
-/* --- Auto-move: pick a good direction when idle --- */
+/* ---------- Punish auto-move (choose the WORST move) ---------- */
+function punishAutoMove() {
+    if (moving) return;
+
+    const dirs = ["left", "up", "right", "down"];
+    const beforeEmpties = grid.filter(v => v === 0).length;
+
+    let worst = null;
+    for (const d of dirs) {
+        const s = simulateMove(d, grid);
+        if (!s.moved) continue;
+
+        // Score to MINIMIZE: favor fewer empties and low gain.
+        // Also slightly penalize increasing empties to be extra mean.
+        const emptyDelta = s.empties - beforeEmpties; // negative is "worse"
+        const score = emptyDelta * 1000 + s.gained;   // lower is worse
+        if (!worst || score < worst.score) worst = { dir: d, score };
+    }
+
+    // If all moves look equal or none (edge case), just pick a bad-ish direction
+    let chosen = worst ? worst.dir : dirs.find(d => simulateMove(d, grid).moved) || "left";
+    move(chosen);
+}
+
+/* ---------- Optional: helpful auto (not used for punishment, but keep for future) ---------- */
 function autoMove() {
     if (moving) return;
-    // Try the four directions and score them: more empties > more gain
-    const dirs = ["left", "up", "right", "down"]; // decent heuristic order
+
+    const dirs = ["left", "up", "right", "down"];
     const beforeEmpties = grid.filter(v => v === 0).length;
 
     let bestPick = null;
     for (const d of dirs) {
-        const sim = simulateMove(d, grid);
-        if (!sim.moved) continue;
-        // Score: empties * 1000 + gained; prefer moves that increase empties
-        const emptyGain = sim.empties - beforeEmpties;
-        const score = emptyGain * 1000 + sim.gained;
-        if (!bestPick || score > bestPick.score) bestPick = { dir: d, score, sim };
+        const s = simulateMove(d, grid);
+        if (!s.moved) continue;
+        const emptyGain = s.empties - beforeEmpties;
+        const score = emptyGain * 1000 + s.gained; // higher is better
+        if (!bestPick || score > bestPick.score) bestPick = { dir: d, score };
     }
 
-    // If nothing moves (shouldn't happen if canMove() is true), bail
-    const chosen = bestPick ? bestPick.dir : dirs.find(d => simulateMove(d, grid).moved);
-    if (chosen) move(chosen);
+    let chosen = bestPick ? bestPick.dir : null;
+    if (!chosen) {
+        const options = dirs.filter(d => simulateMove(d, grid).moved);
+        if (options.length) chosen = options[(Math.random() * options.length) | 0];
+    }
+    if (!chosen) chosen = "left";
+    move(chosen);
 }
 
-/* --- Real move (mutates grid, renders, spawns, FX) --- */
+/* ---------- Real move (mutates grid, renders, FX) ---------- */
 function move(dir) {
     mergingMap.clear();
     let moved = false, gained = 0;
     const lines = [];
+
     if (dir === "left" || dir === "right") {
         for (let r = 0; r < SIZE; r++) {
             const L = []; for (let c = 0; c < SIZE; c++) L.push(idx(r, c));
@@ -242,7 +292,6 @@ function move(dir) {
 
             if (window.life) life.burstAtCell(r, c);
             const val = grid[at] || 4;
-
             if (window.sprites) sprites.burstAtCell(r, c, val);
             if (window.sounds) sounds.playMerge(val);
             if (window.lifeBG) lifeBG.burstAroundElement(boardEl);
@@ -258,10 +307,11 @@ function move(dir) {
     if (gained) updateScore(gained);
     if (moved) spawnRandom();
     render();
-    if (!canMove()) showOverlay(isWin() ? "You win!" : "Game Over", isWin() ? "You reached 2048!" : "No more moves available.");
+    if (!canMove())
+        showOverlay(isWin() ? "You win!" : "Game Over",
+            isWin() ? "You reached 2048!" : "No more moves available.");
 
-    // Any move (player or auto) counts as activity
-    resetIdleTimer();
+    resetIdleTimer(); // every move (manual or auto) counts as activity
 }
 
 function canMove() {
@@ -269,17 +319,19 @@ function canMove() {
     for (let r = 0; r < SIZE; r++) {
         for (let c = 0; c < SIZE; c++) {
             const v = grid[idx(r, c)];
-            if ((r + 1 < SIZE && grid[idx(r + 1, c)] === v) || (c + 1 < SIZE && grid[idx(r, c + 1)] === v)) return true;
+            if ((r + 1 < SIZE && grid[idx(r + 1, c)] === v) ||
+                (c + 1 < SIZE && grid[idx(r, c + 1)] === v)) return true;
         }
     }
     return false;
 }
 function isWin() { return grid.some(v => v >= 2048); }
 
+/* ---------- Rendering ---------- */
 function posToLeftTop(r, c) {
     const root = getComputedStyle(document.documentElement);
-    const gap = root.getPropertyValue('--gap').trim() || '12px';
-    const size = root.getPropertyValue('--tile-size').trim() || '100px';
+    const gap = root.getPropertyValue("--gap").trim() || "12px";
+    const size = root.getPropertyValue("--tile-size").trim() || "100px";
     return { left: `calc(${c} * (${size} + ${gap}))`, top: `calc(${r} * (${size} + ${gap}))` };
 }
 function tileClass(v) { const base = `tile tile-${v}`; return v >= 1024 ? `${base} tile-big` : base; }
@@ -289,15 +341,15 @@ function render() {
     for (let r = 0; r < SIZE; r++) {
         for (let c = 0; c < SIZE; c++) {
             const v = grid[idx(r, c)]; if (!v) continue;
-            const el = document.createElement('div');
+            const el = document.createElement("div");
             el.className = tileClass(v);
-            if (String(v).length >= 4) el.classList.add('tile-big');
+            if (String(v).length >= 4) el.classList.add("tile-big");
             const { left, top } = posToLeftTop(r, c);
             el.style.left = left; el.style.top = top; el.textContent = v;
             if (mergingMap.has(idx(r, c))) {
                 const t = mergingMap.get(idx(r, c)).type;
-                if (t === "new") el.classList.add('new');
-                if (t === "merged") el.classList.add('merged');
+                if (t === "new") el.classList.add("new");
+                if (t === "merged") el.classList.add("merged");
             }
             tilesLayer.appendChild(el);
         }
@@ -305,14 +357,16 @@ function render() {
     updateShake();
 }
 
-/* --- Input --- */
-const KEYS = { ArrowLeft: "left", ArrowRight: "right", ArrowUp: "up", ArrowDown: "down", a: "left", d: "right", w: "up", s: "down", h: "left", l: "right", k: "up", j: "down" };
+/* ---------- Input ---------- */
+const KEYS = {
+    ArrowLeft: "left", ArrowRight: "right", ArrowUp: "up", ArrowDown: "down",
+    a: "left", d: "right", w: "up", s: "down", h: "left", l: "right", k: "up", j: "down"
+};
+
 window.addEventListener("keydown", (e) => {
     const dir = KEYS[e.key];
     if (!dir || moving) return;
-
-    // --- PATCH: ignore input if overlay visible ---
-    if (!overlay.classList.contains('hidden')) return;
+    if (!overlay.classList.contains("hidden")) return;
 
     e.preventDefault();
     moving = true;
@@ -320,7 +374,6 @@ window.addEventListener("keydown", (e) => {
     if (window.mascot) mascot.onMove(dir);
     setTimeout(() => (moving = false), 120);
 
-    // User activity => reset timer right away
     resetIdleTimer();
 });
 
@@ -328,14 +381,12 @@ let touchStart = null; const MIN_SWIPE = 24;
 boardEl.addEventListener("touchstart", (e) => {
     const t = e.touches[0];
     touchStart = { x: t.clientX, y: t.clientY };
-    resetIdleTimer(); // user touched => activity
+    resetIdleTimer();
 }, { passive: true });
 
 boardEl.addEventListener("touchend", (e) => {
     if (!touchStart) return;
-
-    // --- PATCH: ignore input if overlay visible ---
-    if (!overlay.classList.contains('hidden')) { touchStart = null; return; }
+    if (!overlay.classList.contains("hidden")) { touchStart = null; return; }
 
     const t = e.changedTouches[0];
     const dx = t.clientX - touchStart.x;
@@ -350,22 +401,22 @@ boardEl.addEventListener("touchend", (e) => {
         setTimeout(() => (moving = false), 120);
     }
     touchStart = null;
-    resetIdleTimer(); // activity
+    resetIdleTimer();
 }, { passive: true });
 
-newGameBtn.addEventListener("click", () => { init(); resetIdleTimer(); });
-tryAgainBtn.addEventListener("click", () => { init(); resetIdleTimer(); });
-
+/* ---------- Overlay ---------- */
 function showOverlay(t, txt) {
     gameOverTitle.textContent = t;
     gameOverText.textContent = txt;
-    overlay.classList.remove('hidden');
-    if (window.mascot) mascot.onGameOver(t === "You win!"); // notify mascot here
+    overlay.classList.remove("hidden");
+    if (window.mascot) mascot.onGameOver(t === "You win!");
 }
+function hideOverlay() { overlay.classList.add("hidden"); }
 
-function hideOverlay() { overlay.classList.add('hidden'); }
-
+/* ---------- Boot ---------- */
 window.addEventListener("load", () => {
     bestEl.textContent = getBest();
     init();
 });
+newGameBtn.addEventListener("click", () => { init(); resetIdleTimer(); });
+tryAgainBtn.addEventListener("click", () => { init(); resetIdleTimer(); });
