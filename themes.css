@@ -1,0 +1,116 @@
+/* themes.css — bold palette shifts for 2048 + Conway layers */
+body, .board, .cell, .score, .btn, .tiles, .grid, .overlay, .modal {
+    transition: background-color .3s linear, color .3s linear, border-color .3s linear, filter .3s linear;
+}
+
+/* Theme 0 — default beige (style.css handles base vars) */
+
+/* Theme 1 — Minty Light (cool blues / teals) */
+:root[data-theme="1"] {
+    --bg: #eafff4;
+    --panel: #2a8c73;
+    --grid: #94d8c4;
+    --empty: #94d8c4;
+    --tile-text: #183b33;
+    --tile-text-light: #eafff4;
+    --accent: #1f6d59;
+    /* Tiles */
+    --t2: #e6fff2;
+    --t4: #c0f9e2;
+    --t8: #8ae9c6;
+    --t16: #55d8a9;
+    --t32: #29c897;
+    --t64: #1fb582;
+    --t128: #14976b;
+    --t256: #0d7856;
+    --t512: #095b42;
+    --t1024: #063e2d;
+    --t2048: #04261d;
+    /* Conway palette */
+    --life1: #b3ffe3;
+    --life2: #7fffd4;
+    --life3: #55d8a9;
+    --life4: #29c897;
+    --life5: #0d7856;
+}
+
+/* Theme 2 — Neon Violet (purples / pinks) */
+:root[data-theme="2"] {
+    --bg: #f7e6ff;
+    --panel: #8135d8;
+    --grid: #c59bff;
+    --empty: #c59bff;
+    --tile-text: #2c1b3a;
+    --tile-text-light: #fdf7ff;
+    --accent: #5d24a3;
+    --t2: #f5e6ff;
+    --t4: #e3bfff;
+    --t8: #d099ff;
+    --t16: #b86cff;
+    --t32: #9e3cff;
+    --t64: #8628eb;
+    --t128: #6b1dbd;
+    --t256: #541795;
+    --t512: #3e116d;
+    --t1024: #290b47;
+    --t2048: #18052a;
+    --life1: #d099ff;
+    --life2: #b86cff;
+    --life3: #9e3cff;
+    --life4: #6b1dbd;
+    --life5: #3e116d;
+}
+
+/* Theme 3 — Sunset Blaze (reds / oranges) */
+:root[data-theme="3"] {
+    --bg: #fff3e8;
+    --panel: #d64527;
+    --grid: #ffb49b;
+    --empty: #ffb49b;
+    --tile-text: #451e15;
+    --tile-text-light: #fffaf7;
+    --accent: #a8321b;
+    --t2: #ffe8d5;
+    --t4: #ffc7a3;
+    --t8: #ff9f70;
+    --t16: #ff7c47;
+    --t32: #ff5722;
+    --t64: #e64a19;
+    --t128: #d84315;
+    --t256: #bf360c;
+    --t512: #a52b07;
+    --t1024: #7b1d03;
+    --t2048: #4e0e00;
+    --life1: #ffb49b;
+    --life2: #ff7c47;
+    --life3: #ff5722;
+    --life4: #e64a19;
+    --life5: #a52b07;
+}
+
+/* Theme 4 — Cyberpunk (black / neon magenta) */
+:root[data-theme="4"] {
+    --bg: #0b0012;
+    --panel: #2a0035;
+    --grid: #590063;
+    --empty: #590063;
+    --tile-text: #ffe7ff;
+    --tile-text-light: #ffffff;
+    --accent: #ff00c8;
+    --t2: #ffe7ff;
+    --t4: #ffb0ff;
+    --t8: #ff70ff;
+    --t16: #ff2fff;
+    --t32: #e600e6;
+    --t64: #c000c0;
+    --t128: #900090;
+    --t256: #600060;
+    --t512: #400040;
+    --t1024: #240024;
+    --t2048: #120012;
+    --life1: #ff70ff;
+    --life2: #ff2fff;
+    --life3: #e600e6;
+    --life4: #900090;
+    --life5: #400040;
+}

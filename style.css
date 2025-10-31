@@ -151,6 +151,27 @@ body {
     box-shadow: 0 4px 14px rgba(0,0,0,.08);
 }
 
+/* Themeable tile colors */
+:root{
+  --t2:#eee4da; --t4:#ede0c8; --t8:#f2b179;
+  --t16:#f59563; --t32:#f67c5f; --t64:#f65e3b;
+  --t128:#edcf72; --t256:#edcc61; --t512:#edc850;
+  --t1024:#edc53f; --t2048:#edc22e;
+}
+/* (text colors still use --tile-text / --tile-text-light as you already do) */
+.tile-2    { background: var(--t2); }
+.tile-4    { background: var(--t4); }
+.tile-8    { background: var(--t8);    color: var(--tile-text-light); }
+.tile-16   { background: var(--t16);   color: var(--tile-text-light); }
+.tile-32   { background: var(--t32);   color: var(--tile-text-light); }
+.tile-64   { background: var(--t64);   color: var(--tile-text-light); }
+.tile-128  { background: var(--t128);  color: var(--tile-text-light); }
+.tile-256  { background: var(--t256);  color: var(--tile-text-light); }
+.tile-512  { background: var(--t512);  color: var(--tile-text-light); }
+.tile-1024 { background: var(--t1024); color: var(--tile-text-light); }
+.tile-2048 { background: var(--t2048); color: var(--tile-text-light); }
+
+
     .tile.new {
         animation: pop 120ms ease-out;
     }
@@ -171,58 +192,6 @@ body {
     }
 }
 
-.tile-2 {
-    background: #eee4da;
-}
-
-.tile-4 {
-    background: #ede0c8;
-}
-
-.tile-8 {
-    background: #f2b179;
-    color: var(--tile-text-light);
-}
-
-.tile-16 {
-    background: #f59563;
-    color: var(--tile-text-light);
-}
-
-.tile-32 {
-    background: #f67c5f;
-    color: var(--tile-text-light);
-}
-
-.tile-64 {
-    background: #f65e3b;
-    color: var(--tile-text-light);
-}
-
-.tile-128 {
-    background: #edcf72;
-    color: var(--tile-text-light);
-}
-
-.tile-256 {
-    background: #edcc61;
-    color: var(--tile-text-light);
-}
-
-.tile-512 {
-    background: #edc850;
-    color: var(--tile-text-light);
-}
-
-.tile-1024 {
-    background: #edc53f;
-    color: var(--tile-text-light);
-}
-
-.tile-2048 {
-    background: #edc22e;
-    color: var(--tile-text-light);
-}
 
 .tile-big {
     font-size: clamp(16px,3.5vw,26px);

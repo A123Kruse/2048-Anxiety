@@ -25,6 +25,14 @@ const rcFromIdx = (i) => [Math.floor(i / SIZE), i % SIZE];
 function getBest() { const b = localStorage.getItem("best2048"); return b ? parseInt(b, 10) : 0; }
 function setBest(v) { localStorage.setItem("best2048", String(v)); }
 
+/* Palette shifting */
+const THEME_COUNT = 5; // 0..4 (matches themes.css)
+function applyThemeForScore(score) {
+    const themeIndex = Math.floor(score / 2500) % THEME_COUNT; // 2500-pt steps
+    // Theme 0 is your base; themes.css overrides 1..4
+    document.documentElement.setAttribute('data-theme', String(themeIndex));
+}
+
 /* --- Shake intensity sync to board fill --- */
 function updateShake() {
     if (!window.shake) return;
@@ -46,9 +54,13 @@ function onIdleTimeout() {
     if (window.mascot) mascot.onIdleWarning();
 
     rapidShake(420);     // visual cue
-    autoMove();          // perform one auto move
 
+    // --- PATCH: mark moving during auto-move to avoid clashes ---
+    moving = true;
+    autoMove();          // perform one auto move
     if (window.mascot) mascot.onAutoMove();
+    setTimeout(() => (moving = false), 120);
+    // ------------------------------------------------------------
 
     // autoMove() will render and then we immediately re-arm the timer
     resetIdleTimer();
@@ -73,6 +85,7 @@ function init() {
     spawnRandom(); spawnRandom();
     render(true);
     hideOverlay();
+    applyThemeForScore(0);
 
     if (window.life) life.init();            // in-board pixel Life
     if (window.shake) shake.init(boardEl);   // shake engine
@@ -88,6 +101,7 @@ function updateScore(delta) {
     scoreEl.textContent = score;
     best = Math.max(getBest(), score);
     bestEl.textContent = best;
+    applyThemeForScore(score);
     if (best > getBest()) setBest(best);
 }
 
@@ -296,6 +310,10 @@ const KEYS = { ArrowLeft: "left", ArrowRight: "right", ArrowUp: "up", ArrowDown:
 window.addEventListener("keydown", (e) => {
     const dir = KEYS[e.key];
     if (!dir || moving) return;
+
+    // --- PATCH: ignore input if overlay visible ---
+    if (!overlay.classList.contains('hidden')) return;
+
     e.preventDefault();
     moving = true;
     move(dir);
@@ -315,6 +333,10 @@ boardEl.addEventListener("touchstart", (e) => {
 
 boardEl.addEventListener("touchend", (e) => {
     if (!touchStart) return;
+
+    // --- PATCH: ignore input if overlay visible ---
+    if (!overlay.classList.contains('hidden')) { touchStart = null; return; }
+
     const t = e.changedTouches[0];
     const dx = t.clientX - touchStart.x;
     const dy = t.clientY - touchStart.y;

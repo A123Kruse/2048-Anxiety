@@ -6,9 +6,12 @@
 
   // Point these to your GIFs (can be png/apng/webp if they animate)
   const EXPLOSIONS = [
-    'assets/explosions/explsionorange.gif',
-    'assets/explosions/explsionred.gif',
-    'assets/explosions/explsionyellow.gif'
+      'assets/explosions/explosiongreen.gif',
+      'assets/explosions/explosionpink.gif',
+      'assets/explosions/explosionpurple.gif',
+      'assets/explosions/explosionred.gif',
+      'assets/explosions/explosionyellow.gif',
+      
   ];
 
   // Map a board cell (r,c) to pixel pos inside sprite layer
